@@ -1,26 +1,29 @@
 package com.example.caloriesapp.ui.screens.welcome
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.caloriesapp.data.UserPreferences
 import com.example.caloriesapp.ui.components.MonoFilterChip
 import com.example.caloriesapp.ui.components.MonoFilledButton
 import com.example.caloriesapp.ui.components.MonoOutlinedButton
 import com.example.caloriesapp.ui.theme.MonoTypography
+import com.example.caloriesapp.viewmodel.OnboardingViewModel
 
 @Composable
 fun DiseasesSelectionScreen(
-    initialSelection: Set<String> = emptySet(),
+    viewModel: OnboardingViewModel,
     onSave: (Set<String>) -> Unit,
     onContinue: () -> Unit,
     onBack: () -> Unit
 ) {
-    var selectedDiseases by remember { mutableStateOf(initialSelection) }
+
+    val state by viewModel.state.collectAsState()
+    var diseases by remember { mutableStateOf(state.diseases) }
 
     val allDiseases = listOf(
         "Diabetes",
@@ -53,7 +56,7 @@ fun DiseasesSelectionScreen(
                 MonoFilledButton(
                     text = "Continue",
                     onClick = {
-                        onSave(selectedDiseases)  // Save selection
+                        onSave(diseases)  // Save selection
                         onContinue()              // Navigate to next screen
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -63,45 +66,53 @@ fun DiseasesSelectionScreen(
     ) { padding ->
         Column(
             modifier = Modifier
-                .padding(padding)
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 32.dp)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(40.dp))
 
             Text(
                 "Health Condition",
                 style = MonoTypography.displaySmall
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             Text(
                 "Select all that apply.",
                 style = MonoTypography.bodyMedium
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(12.dp))
 
-            FlowRow(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
             ) {
-                allDiseases.forEach { disease ->
-                    MonoFilterChip(
-                        label = disease,
-                        selected = disease in selectedDiseases,
-                        onClick = {
-                            selectedDiseases = if (disease in selectedDiseases)
-                                selectedDiseases - disease
-                            else
-                                selectedDiseases + disease
-                        }
-                    )
+                FlowRow(
+                    verticalArrangement = Arrangement.spacedBy(0.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    allDiseases.forEach { disease ->
+                        MonoFilterChip(
+                            label = disease,
+                            selected = disease in diseases,
+                            onClick = {
+                                diseases = if (disease in diseases)
+                                    diseases - disease
+                                else
+                                    diseases + disease
+                            }
+                        )
+                    }
                 }
             }
+
+            Spacer(Modifier.height(120.dp))
         }
     }
 }

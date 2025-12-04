@@ -25,15 +25,14 @@ import com.example.caloriesapp.ui.theme.MonoTypography
 import com.example.caloriesapp.viewmodel.OnboardingViewModel
 
 @Composable
-fun AgeSelectionScreen(
+fun DesiredWeightSelectionScreen(
     viewModel: OnboardingViewModel,
     onSave: (Int) -> Unit,
     onContinue: () -> Unit,
     onBack: () -> Unit
 ) {
-
     val state by viewModel.state.collectAsState()
-    var age by remember { mutableStateOf(state.age ?: 18) }
+    var desiredWeight by remember { mutableStateOf(state.desiredWeight ?: 60) }
 
     Scaffold(
         bottomBar = {
@@ -51,7 +50,7 @@ fun AgeSelectionScreen(
                 MonoFilledButton(
                     text = "Continue",
                     onClick = {
-                        onSave(age)
+                        onSave(desiredWeight)
                         onContinue()
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -70,22 +69,21 @@ fun AgeSelectionScreen(
             Spacer(Modifier.height(40.dp))
 
             Text(
-                text = "Your Age",
+                text = "Target Weight",
                 style = MonoTypography.displaySmall
             )
 
             Spacer(Modifier.height(12.dp))
 
             Text(
-                text = "Adjust your age",
+                text = "Adjust your target weight (kg)",
                 style = MonoTypography.bodyMedium
             )
 
             Spacer(Modifier.height(40.dp))
 
-            // Age number
             Text(
-                text = age.toString(),
+                text = "$desiredWeight kg",
                 style = MonoTypography.displayLarge
             )
 
@@ -97,13 +95,13 @@ fun AgeSelectionScreen(
             ) {
                 MonoOutlinedButton(
                     text = "-",
-                    onClick = { if (age > 5) age-- },
+                    onClick = { if (desiredWeight > 30) desiredWeight-- },
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(Modifier.width(12.dp))
                 MonoOutlinedButton(
                     text = "+",
-                    onClick = { if (age < 100) age++ },
+                    onClick = { if (desiredWeight < 200) desiredWeight++ },
                     modifier = Modifier.weight(1f)
                 )
             }

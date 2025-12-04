@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,15 +22,17 @@ import androidx.compose.ui.unit.dp
 import com.example.caloriesapp.ui.components.MonoFilledButton
 import com.example.caloriesapp.ui.components.MonoOutlinedButton
 import com.example.caloriesapp.ui.theme.MonoTypography
+import com.example.caloriesapp.viewmodel.OnboardingViewModel
 
 @Composable
 fun HeightSelectionScreen(
-    initialHeight: Int = 170,
+    viewModel: OnboardingViewModel,
     onSave: (Int) -> Unit,
     onContinue: () -> Unit,
     onBack: () -> Unit
 ) {
-    var height by remember { mutableStateOf(initialHeight) }
+    val state by viewModel.state.collectAsState()
+    var height by remember { mutableStateOf(state.height ?: 170) }
 
     Scaffold(
         bottomBar = {

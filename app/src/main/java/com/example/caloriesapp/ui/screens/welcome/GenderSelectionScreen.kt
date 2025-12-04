@@ -1,24 +1,26 @@
 package com.example.caloriesapp.ui.screens.welcome
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.caloriesapp.ui.components.MonoFilledButton
 import com.example.caloriesapp.ui.theme.MonoTypography
-import com.example.caloriesapp.ui.theme.White
 import com.example.caloriesapp.ui.components.MonoSelectableCard
+import com.example.caloriesapp.viewmodel.OnboardingViewModel
 
 @Composable
 fun GenderSelectionScreen(
-    initialGender: String?,          // "male", "female", "other", or null
-    onContinue: (String?) -> Unit     // we pass selected gender forward
+    viewModel: OnboardingViewModel,
+    onContinue: () -> Unit,
+    onSave: (String) -> Unit
 ) {
-    var selected by remember { mutableStateOf(initialGender) }
+    val state by viewModel.state.collectAsState()
+    var gender by remember { mutableStateOf(state.gender ?: "male") }
 
     Scaffold(
         bottomBar = {
@@ -29,57 +31,58 @@ fun GenderSelectionScreen(
             ) {
                 MonoFilledButton(
                     text = "Continue",
-                    onClick = { onContinue(selected) },
+                    onClick = {
+                        onSave(gender)
+                        onContinue() },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         }
-    ) { _ ->
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(White)
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(40.dp))
 
             Text(
                 "Select gender",
                 style = MonoTypography.displaySmall
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
             Text(
                 "Choose the option you identify with.\nThis helps improve macro recommendations.",
                 style = MonoTypography.bodyMedium
             )
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(40.dp))
 
             // --- OPTIONS ---
             MonoSelectableCard(
                 label = "Male",
-                selected = selected == "male",
-                onClick = { selected = "male" }
+                selected = gender == "male",
+                onClick = { gender = "male" }
             )
 
             Spacer(Modifier.height(12.dp))
 
             MonoSelectableCard(
                 label = "Female",
-                selected = selected == "female",
-                onClick = { selected = "female" }
+                selected = gender == "female",
+                onClick = { gender = "female" }
             )
 
             Spacer(Modifier.height(12.dp))
 
             MonoSelectableCard(
                 label = "Other",
-                selected = selected == "other",
-                onClick = { selected = "other" }
+                selected = gender == "other",
+                onClick = { gender = "other" }
             )
         }
     }

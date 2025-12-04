@@ -3,11 +3,16 @@ package com.example.caloriesapp
 import android.app.Application
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -20,10 +25,13 @@ import com.example.caloriesapp.viewmodel.OnboardingViewModel
 import com.example.caloriesapp.ui.screens.CameraScreen
 import com.example.caloriesapp.ui.screens.CapturedImagePreview
 import com.example.caloriesapp.ui.screens.HomeScreen
+import com.example.caloriesapp.ui.screens.welcome.ActivityLevelScreen
 import com.example.caloriesapp.ui.screens.welcome.AgeSelectionScreen
+import com.example.caloriesapp.ui.screens.welcome.DesiredWeightSelectionScreen
 import com.example.caloriesapp.ui.screens.welcome.DiseasesSelectionScreen
 import com.example.caloriesapp.ui.screens.welcome.GenderSelectionScreen
 import com.example.caloriesapp.ui.screens.welcome.HeightSelectionScreen
+import com.example.caloriesapp.ui.screens.welcome.ProfileSummaryScreen
 import com.example.caloriesapp.ui.screens.welcome.RecommendedFoodsScreen
 import com.example.caloriesapp.ui.screens.welcome.WeightSelectionScreen
 import com.example.caloriesapp.ui.screens.welcome.WelcomeScreen
@@ -43,114 +51,123 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+object Navigation {
+    const val WELCOME = "welcome"
+    const val GENDER = "gender"
+    const val AGE = "age"
+    const val HEIGHT = "height"
+    const val WEIGHT = "weight"
+    const val DESIRED_WEIGHT = "desiredWeight"
+    const val ACTIVITY_LEVEL = "activityLevel"
+    const val DISEASES = "diseases"
+    const val PROFILE_SUMMARY = "profile_summary"
+    const val RECOMMENDED = "recommended"
+    const val HOME = "home"
+    const val CAMERA = "camera"
+    const val ANALYSIS = "analysis"
+}
+
 @Composable
 fun AppNavigation() {
-
     val navController = rememberNavController()
     val onboardingViewModel: OnboardingViewModel = viewModel(
         factory = OnboardingViewModelFactory(LocalContext.current.applicationContext as Application)
     )
 
+    val onboardingState by onboardingViewModel.state.collectAsState()
 
-
-    val selectedDiseases by onboardingViewModel.diseases.collectAsState()
-
-    NavHost(
-        navController = navController,
-        startDestination = "welcome"
-    ) {
-
-        composable("welcome") {
-            WelcomeScreen(
-                onContinue = {
-                    navController.navigate("gender") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
-                }
-            )
+    NavHost(navController = navController, startDestination = Navigation.WELCOME) {
+        composable(Navigation.WELCOME) {
+            WelcomeScreen(onContinue = { navController.navigate(Navigation.GENDER) { popUpTo(Navigation.WELCOME) { inclusive = true } } })
         }
-
-        composable("gender") {
+        composable(Navigation.GENDER) {
             GenderSelectionScreen(
-                initialGender = onboardingViewModel.gender, // or load from DataStore/VM
-                onContinue = { gender ->
-                    onboardingViewModel.saveGender(gender)
-                    navController.navigate("age")
-                }
+                viewModel = onboardingViewModel,
+                onSave = { onboardingViewModel.saveGender(it) },
+                onContinue = { navController.navigate(Navigation.AGE) }
             )
         }
-
-        composable("age") {
+        composable(Navigation.AGE) {
             AgeSelectionScreen(
-                onSave = { viewModel.saveAge(it) },
-                onContinue = { navController.navigate("weight") },
+                viewModel = onboardingViewModel,
+                onSave = { onboardingViewModel.saveAge(it) },
+                onContinue = { navController.navigate(Navigation.HEIGHT) },
                 onBack = { navController.popBackStack() }
             )
         }
-
-        composable("weight") {
-            WeightSelectionScreen(
-                onSave = { viewModel.saveWeight(it) },
-                onContinue = { navController.navigate("height") },
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        composable("height") {
+        composable(Navigation.HEIGHT) {
             HeightSelectionScreen(
-                onSave = { viewModel.saveHeight(it) },
-                onContinue = { navController.navigate("diseases") },
+                viewModel = onboardingViewModel,
+                onSave = { onboardingViewModel.saveHeight(it) },
+                onContinue = { navController.navigate(Navigation.WEIGHT) },
                 onBack = { navController.popBackStack() }
             )
         }
-
-
-
-        composable("diseases") {
+        composable(Navigation.WEIGHT) {
+            WeightSelectionScreen(
+                viewModel = onboardingViewModel,
+                onSave = { onboardingViewModel.saveWeight(it) },
+                onContinue = { navController.navigate(Navigation.DESIRED_WEIGHT) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Navigation.DESIRED_WEIGHT) {
+            DesiredWeightSelectionScreen(
+                viewModel = onboardingViewModel,
+                onSave = { onboardingViewModel.saveDesiredWeight(it) },
+                onContinue = { navController.navigate(Navigation.ACTIVITY_LEVEL) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Navigation.ACTIVITY_LEVEL) {
+            ActivityLevelScreen(
+                viewModel = onboardingViewModel,
+                onSave = { onboardingViewModel.saveActivityLevel(it) },
+                onContinue = { navController.navigate(Navigation.DISEASES) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Navigation.DISEASES) {
             DiseasesSelectionScreen(
-                initialSelection = selectedDiseases,
-                onSave = { newSet ->
-                    onboardingViewModel.updateDiseases(newSet)
-                },
+                viewModel = onboardingViewModel,
+                onSave = { onboardingViewModel.saveDiseases(it) },
                 onContinue = {
-                    onboardingViewModel.updateDiseases(selectedDiseases)
-                    navController.navigate("recommended")
+                    navController.navigate(Navigation.PROFILE_SUMMARY)
                 },
                 onBack = { navController.navigateUp() }
             )
         }
-
-        composable("recommended") {
+        composable(Navigation.PROFILE_SUMMARY) {
+            ProfileSummaryScreen(
+                viewModel = onboardingViewModel,
+                onContinue = {
+                    navController.navigate(Navigation.RECOMMENDED) {
+                        popUpTo(Navigation.PROFILE_SUMMARY) { inclusive = true }
+                    }
+                },
+                onBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        composable(Navigation.RECOMMENDED) {
             RecommendedFoodsScreen(
                 onboardingViewModel,
-                onContinue = {
-                    navController.navigate("home") {
-                        popUpTo("recommended") { inclusive = true }
-                    }
-                },
+                onContinue = { navController.navigate(Navigation.HOME) {
+                    popUpTo(Navigation.RECOMMENDED) { inclusive = true }
+                } },
                 onBack = { navController.navigateUp() }
             )
         }
-
-
-        // -------------------
         // HOME SCREEN
-        // -------------------
-        composable("home") {
+        composable(Navigation.HOME) {
             HomeScreen(
-                onCameraClick = {
-                    navController.navigate("camera")
-                },
-                onAnalysisClick = {
-                    navController.navigate("analysis") // optional future screen
-                }
+                onCameraClick = { navController.navigate(Navigation.CAMERA) },
+                onAnalysisClick = { navController.navigate(Navigation.ANALYSIS) } // optional future screen
             )
         }
-
-        // -------------------
         // CAMERA SCREEN
-        // -------------------
-        composable("camera") {
+        composable(Navigation.CAMERA) {
             CameraScreen(
                 onImageCaptured = { file ->
                     val encoded = Uri.encode(file.absolutePath)
@@ -159,35 +176,37 @@ fun AppNavigation() {
                 onClose = { navController.popBackStack() }
             )
         }
-
-        // -------------------
         // PREVIEW SCREEN
-        // -------------------
-        composable(
-            route = "preview/{path}",
-            arguments = listOf(
-                navArgument("path") { type = NavType.StringType }
-            )
-        ) { entry ->
-
+        composable(route = "preview/{path}", arguments = listOf(navArgument("path") { type = NavType.StringType })) { entry ->
             val encodedPath = entry.arguments?.getString("path")!!
             val realPath = Uri.decode(encodedPath)
             val file = File(realPath)
 
-            // → GPT will be called *inside CapturedImagePreview* using LaunchedEffect
+            // Assuming you have a state to hold the analysis result
+            val analysisResult = remember { mutableStateOf<String?>(null) }
+
             CapturedImagePreview(
                 file = file,
                 onRetake = { navController.popBackStack() },
-                onFinish = {
-                    navController.navigate("home") {
-                        popUpTo("camera") { inclusive = true }
-                    }
-                },
+                onFinish = { navController.navigate(Navigation.HOME) { popUpTo(Navigation.CAMERA) { inclusive = true } } },
                 onAnalyze = { imageFile ->
                     val ai = ChatGPTService(BuildConfig.OPENAI_KEY)
                     ai.analyzeFoodImage(imageFile) // <-- must return String
                 }
             )
+
+            // Use LaunchedEffect to trigger analysis
+            LaunchedEffect(file) {
+                val ai = ChatGPTService(BuildConfig.OPENAI_KEY)
+                analysisResult.value = ai.analyzeFoodImage(file) // Store the result
+                // Handle the result, e.g., show a dialog or update UI state
+                // You could use a state variable to trigger UI updates based on analysisResult.value
+            }
+
+            analysisResult.value?.let { result ->
+                // Show the result in a Text, Dialog, or any other appropriate UI component
+                Text(text = result) // Example of displaying the result
+            }
         }
     }
 }

@@ -2,7 +2,10 @@ package com.example.caloriesapp.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -33,6 +36,7 @@ fun MonoCard(content: @Composable () -> Unit) {
 @Composable
 fun MonoSelectableCard(
     label: String,
+    description: String? = null,
     selected: Boolean,
     onClick: () -> Unit
 ) {
@@ -54,12 +58,24 @@ fun MonoSelectableCard(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             contentAlignment = Alignment.CenterStart
         ) {
-            Text(
-                text = label,
-                style = MonoTypography.bodyLarge.copy(
-                    color = if (selected) White else Black
-                )
-            )
+            Column() {
+                Text(
+                        text = label,
+                        style = MonoTypography.bodyLarge.copy(
+                            color = if (selected) White else Black
+                        )
+                    )
+
+                    if (description != null) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = description,
+                            style = MonoTypography.bodySmall.copy(
+                                color = if (selected) White else Black
+                            )
+                        )
+                    }
+                }
+            }
         }
     }
-}
