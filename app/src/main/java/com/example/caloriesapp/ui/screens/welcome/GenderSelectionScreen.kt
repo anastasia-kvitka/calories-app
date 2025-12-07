@@ -22,6 +22,13 @@ fun GenderSelectionScreen(
     val state by viewModel.state.collectAsState()
     var gender by remember { mutableStateOf(state.gender ?: "male") }
 
+    // Sync with ViewModel when navigating back
+    LaunchedEffect(state.gender) {
+        state.gender?.let {
+            gender = it
+        }
+    }
+
     Scaffold(
         bottomBar = {
             Column(

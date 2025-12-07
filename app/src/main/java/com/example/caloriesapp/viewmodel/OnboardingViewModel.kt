@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.caloriesapp.data.UserPreferences
+import com.example.caloriesapp.utils.CalorieCalculator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -69,6 +70,27 @@ class OnboardingViewModel(
                 activityLevel = activityLevel,
                 diseases = diseases
             )
+        }
+    }
+
+    fun calculateAndSaveNutrition() {
+        viewModelScope.launch {
+            val currentState = _state.value
+
+            if (currentState.isValid) {
+                val nutritionData = CalorieCalculator.calculateNutritionPlan(
+                    gender = currentState.gender!!,
+                    weight = currentState.weight!!,
+                    height = currentState.height!!,
+                    age = currentState.age!!,
+                    desiredWeight = currentState.desiredWeight!!,
+                    activityLevel = currentState.activityLevel!!
+                )
+
+                UserPreferences.saveNutritionData(appContext, nutritionData)
+
+                Log.d("OnboardingVM", "Calculated nutrition: $nutritionData")
+            }
         }
     }
 
@@ -143,6 +165,7 @@ class OnboardingViewModel(
         savePreference {
             UserPreferences.saveGender(appContext, activityLevel)
             _state.value = _state.value.copy(activityLevel = activityLevel)
+            calculateAndSaveNutrition()
         }
     }
 

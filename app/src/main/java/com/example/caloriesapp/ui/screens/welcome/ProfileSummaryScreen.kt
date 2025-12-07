@@ -8,8 +8,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -17,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.caloriesapp.ui.components.MonoFilledButton
 import com.example.caloriesapp.ui.components.MonoOutlinedButton
+import com.example.caloriesapp.utils.CalorieCalculator
 import com.example.caloriesapp.viewmodel.OnboardingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,6 +32,21 @@ fun ProfileSummaryScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+
+    var nutritionData by remember { mutableStateOf<CalorieCalculator.NutritionData?>(null) }
+
+    LaunchedEffect(state) {
+        if (state.isValid) {
+            nutritionData = CalorieCalculator.calculateNutritionPlan(
+                gender = state.gender!!,
+                weight = state.weight!!,
+                height = state.height!!,
+                age = state.age!!,
+                desiredWeight = state.desiredWeight!!,
+                activityLevel = state.activityLevel!!
+            )
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -106,8 +126,7 @@ fun ProfileSummaryScreen(
                 value = state.activityLevel?.capitalize() ?: "Not set"
             )
 
-            // Diseases Card (special handling for Set)
-            Card(
+           Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
@@ -173,9 +192,11 @@ fun ProfileSummaryScreen(
 
             MonoFilledButton(
                 text = "Looks Good!",
-                onClick = onContinue,
-                modifier = Modifier
-                    .fillMaxWidth()
+                onClick = {
+                    viewModel.calculateAndSaveNutrition()
+                    onContinue()
+                },
+                modifier = Modifier.fillMaxWidth()
             )
 
             MonoOutlinedButton(

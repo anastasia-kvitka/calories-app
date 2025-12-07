@@ -98,7 +98,7 @@ fun RecommendedFoodsScreen(
                 }
             }
 
-            //Spacer(Modifier.height(120.dp))
+            Spacer(Modifier.height(120.dp))
 
         }
     }

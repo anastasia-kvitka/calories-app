@@ -1,28 +1,66 @@
 package com.example.caloriesapp.ui.screens
 
+import android.app.Application
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.caloriesapp.R
+import com.example.caloriesapp.ui.components.*
 import com.example.caloriesapp.ui.theme.Black
 import com.example.caloriesapp.ui.theme.White
-import com.example.caloriesapp.ui.components.*
-import com.example.caloriesapp.ui.components.BottomNavItem
 import com.example.caloriesapp.ui.theme.MonoTypography
+import com.example.caloriesapp.viewmodel.HomeViewModel
+
+@Composable
+fun HomeScreenWrapper(
+    onCameraClick: () -> Unit,
+    onAnalysisClick: () -> Unit,
+    onSettingsClick: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    val viewModel: HomeViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                @Suppress("UNCHECKED_CAST")
+                return HomeViewModel(context.applicationContext as Application) as T
+            }
+        }
+    )
+
+    val state by viewModel.state.collectAsState()
+
+    HomeScreen(
+        totalCalories = state.dailyCalorieGoal,
+        caloriesLeft = state.caloriesRemaining,
+        proteinLeft = state.proteinRemaining,
+        fatLeft = state.fatRemaining,
+        carbsLeft = state.carbsRemaining,
+        currentStreak = state.streak,
+        onCameraClick = onCameraClick,
+        onAnalysisClick = onAnalysisClick,
+        onSettingsClick = onSettingsClick
+    )
+}
 
 @Composable
 fun HomeScreen(
@@ -31,8 +69,10 @@ fun HomeScreen(
     proteinLeft: Int = 104,
     fatLeft: Int = 48,
     carbsLeft: Int = 160,
+    currentStreak: Int = 3,
     onCameraClick: () -> Unit,
     onAnalysisClick: () -> Unit,
+    onSettingsClick: () -> Unit = {},
     onStartTodayClick: () -> Unit = {},
     onChangeGoalClick: () -> Unit = {},
 ) {
@@ -60,14 +100,14 @@ fun HomeScreen(
         }
     ) {
         HomeScreenContent(
-            caloriesLeft,
-            totalCalories,
-            proteinLeft,
-            fatLeft,
-            carbsLeft,
-            onStartTodayClick,
-            onChangeGoalClick,
-            onCameraClick
+            caloriesLeft = caloriesLeft,
+            totalCalories = totalCalories,
+            proteinLeft = proteinLeft,
+            fatLeft = fatLeft,
+            carbsLeft = carbsLeft,
+            currentStreak = currentStreak,
+            onCameraClick = onCameraClick,
+            onSettingsClick = onSettingsClick
         )
     }
 }
@@ -79,114 +119,184 @@ private fun HomeScreenContent(
     proteinLeft: Int,
     fatLeft: Int,
     carbsLeft: Int,
-    onStartTodayClick: () -> Unit,
-    onChangeGoalClick: () -> Unit,
-    onCameraClick: () -> Unit
+    currentStreak: Int,
+    onCameraClick: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(White)
             .verticalScroll(rememberScrollState())
-            .padding(20.dp)
-            .background(White),
+            .padding(20.dp),
         horizontalAlignment = Alignment.Start
     ) {
-
-        // Title Row
         Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            //MonoChip("Start today", ) { onStartTodayClick() }
-            Icon(
-                painter = painterResource(R.drawable.ic_settings),
-                contentDescription = null,
-                tint = Black,
-                modifier = Modifier.size(22.dp)
+            Text(
+                text = "Today",
+                style = MonoTypography.displaySmall,
+                color = Black,
+                fontWeight = FontWeight.Bold
             )
+
+            IconButton(onClick = onSettingsClick) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_settings),
+                    contentDescription = "Settings",
+                    tint = Black,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
 
         DaySelectorMono()
 
-        Spacer(Modifier.height(16.dp))
-
-        StreakRowMono()
-
         Spacer(Modifier.height(20.dp))
+
+        StreakRowMono(currentStreak)
+
+        Spacer(Modifier.height(24.dp))
 
         CaloriesSummaryCard(
             caloriesLeft = caloriesLeft,
             totalCalories = totalCalories,
             proteinLeft = proteinLeft,
             fatLeft = fatLeft,
-            carbsLeft = carbsLeft,
-            onChangeGoalClick = onChangeGoalClick
+            carbsLeft = carbsLeft
         )
 
         Spacer(Modifier.height(28.dp))
 
         EmptyTodaySection(onCameraClick)
+
+        Spacer(Modifier.height(80.dp)) // Bottom padding for nav bar
     }
 }
 
-// ----------------------
-//   DAY SELECTOR (Mono)
-// ----------------------
 @Composable
 private fun DaySelectorMono() {
     val days = listOf("Mo", "Tu", "We", "Th", "Fr", "Sa", "Su")
+    val dates = listOf("1", "2", "3", "4", "5", "6", "7")
     var selected by remember { mutableStateOf(2) }
 
     Row(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .height(42.dp),
+            .height(60.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         days.forEachIndexed { index, day ->
             MonoDayChip(
                 label = day,
+                date = dates[index],
                 selected = index == selected,
+                isToday = index == 2,
                 onClick = { selected = index }
             )
         }
     }
 }
 
-// ----------------------
-//     STREAK ROW
-// ----------------------
 @Composable
-private fun StreakRowMono() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text("❤️ ❤️ ❤️", fontSize = 20.sp)
-        Spacer(Modifier.width(12.dp))
+private fun MonoDayChip(
+    label: String,
+    date: String,
+    selected: Boolean,
+    isToday: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(48.dp)
+            .height(60.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                if (selected) Black else White
+            )
+            .border(
+                width = if (isToday && !selected) 2.dp else 1.dp,
+                color = if (isToday && !selected) Black else Color.Transparent,
+                shape = RoundedCornerShape(14.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = label,
+            style = MonoTypography.labelSmall,
+            color = if (selected) White else Black.copy(alpha = 0.6f),
+            fontSize = 11.sp
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = date,
+            style = MonoTypography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = if (selected) White else Black,
+            fontSize = 16.sp
+        )
+    }
+}
 
-        Box(
+@Composable
+private fun StreakRowMono(streak: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = White),
+        shape = RoundedCornerShape(16.dp),
+        border = MonoBorder
+    ) {
+        Row(
             modifier = Modifier
-                .size(34.dp)
-                .clip(CircleShape)
-                .background(White),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("🍅", fontSize = 20.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🔥", fontSize = 28.sp)
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = "$streak day streak",
+                        style = MonoTypography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Black
+                    )
+                    Text(
+                        text = "Keep going!",
+                        style = MonoTypography.bodySmall,
+                        color = Black.copy(alpha = 0.6f)
+                    )
+                }
+            }
+
+            // Hearts
+            Row {
+                repeat(3) {
+                    Text("❤️", fontSize = 20.sp)
+                    if (it < 2) Spacer(Modifier.width(4.dp))
+                }
+            }
         }
     }
 }
 
-// ----------------------
-//   CALORIES SUMMARY
-// ----------------------
 @Composable
 private fun CaloriesSummaryCard(
     caloriesLeft: Int,
     totalCalories: Int,
     proteinLeft: Int,
     fatLeft: Int,
-    carbsLeft: Int,
-    onChangeGoalClick: () -> Unit
+    carbsLeft: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -194,77 +304,107 @@ private fun CaloriesSummaryCard(
         shape = RoundedCornerShape(24.dp),
         border = MonoBorder
     ) {
-        Column(Modifier.padding(18.dp)) {
-
+        Column(Modifier.padding(20.dp)) {
             Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
                 Column {
-                    Text("$caloriesLeft", color = Black, fontSize = 36.sp)
                     Text(
-                        "$caloriesLeft left of $totalCalories",
+                        text = "$caloriesLeft",
+                        color = Black,
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "left of $totalCalories kcal",
+                        style = MonoTypography.bodyMedium,
                         color = Black.copy(alpha = 0.6f)
                     )
                 }
-
-                MonoOutlinedButton(
-                    "Change goal",
-                    onClick = { onChangeGoalClick() }
-                )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
             MonoDivider()
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(20.dp))
 
-            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                MacroMono("Protein", "${proteinLeft}g")
-                MacroMono("Fat", "${fatLeft}g")
-                MacroMono("Carbs", "${carbsLeft}g")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                MacroMono("Protein", "${proteinLeft}g", "💪")
+                MacroMono("Fat", "${fatLeft}g", "🥑")
+                MacroMono("Carbs", "${carbsLeft}g", "🍞")
             }
         }
     }
 }
 
-// ----------------------
-//     MACRO ITEM
-// ----------------------
+// ==========================================
+// MACRO ITEM
+// ==========================================
 @Composable
-private fun MacroMono(label: String, value: String) {
-    Column {
-        Text(value, style = MonoTypography.titleMedium)
-        Text(label, style = MonoTypography.bodyMedium)
+private fun MacroMono(label: String, value: String, emoji: String) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(emoji, fontSize = 24.sp)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = value,
+            style = MonoTypography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Black
+        )
+        Text(
+            text = label,
+            style = MonoTypography.bodySmall,
+            color = Black.copy(alpha = 0.6f)
+        )
     }
 }
 
-// ----------------------
-//     EMPTY STATE
-// ----------------------
+// ==========================================
+// EMPTY STATE SECTION
+// ==========================================
 @Composable
 private fun EmptyTodaySection(onCameraClick: () -> Unit) {
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 24.dp),
+            .padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Nothing added today.", style = MonoTypography.bodyMedium)
-        Text("Take a photo of your meal.", style = MonoTypography.bodyMedium)
+        Text(
+            text = "No meals logged today",
+            style = MonoTypography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = Black
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Tap the camera to scan your meal",
+            style = MonoTypography.bodyMedium,
+            color = Black.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center
+        )
 
         Spacer(Modifier.height(32.dp))
 
+        // Camera Button
         Box(
             modifier = Modifier
-                .size(120.dp)
+                .size(100.dp)
                 .clip(CircleShape)
-                .background(White),
+                .background(Black)
+                .clickable(onClick = onCameraClick),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_camera),
                 contentDescription = "Scan meal",
-                tint = Black,
+                tint = White,
                 modifier = Modifier.size(40.dp)
             )
         }

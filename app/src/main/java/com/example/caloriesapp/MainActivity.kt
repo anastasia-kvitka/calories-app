@@ -3,7 +3,6 @@ package com.example.caloriesapp
 import android.app.Application
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.Text
@@ -24,7 +23,7 @@ import com.example.caloriesapp.ai.ChatGPTService
 import com.example.caloriesapp.viewmodel.OnboardingViewModel
 import com.example.caloriesapp.ui.screens.CameraScreen
 import com.example.caloriesapp.ui.screens.CapturedImagePreview
-import com.example.caloriesapp.ui.screens.HomeScreen
+import com.example.caloriesapp.ui.screens.HomeScreenWrapper
 import com.example.caloriesapp.ui.screens.welcome.ActivityLevelScreen
 import com.example.caloriesapp.ui.screens.welcome.AgeSelectionScreen
 import com.example.caloriesapp.ui.screens.welcome.DesiredWeightSelectionScreen
@@ -65,6 +64,7 @@ object Navigation {
     const val HOME = "home"
     const val CAMERA = "camera"
     const val ANALYSIS = "analysis"
+    const val SETTINGS = "settings"
 }
 
 @Composable
@@ -156,17 +156,16 @@ fun AppNavigation() {
                 onContinue = { navController.navigate(Navigation.HOME) {
                     popUpTo(Navigation.RECOMMENDED) { inclusive = true }
                 } },
-                onBack = { navController.navigateUp() }
+                onBack = { navController.popBackStack() }
             )
         }
-        // HOME SCREEN
         composable(Navigation.HOME) {
-            HomeScreen(
+            HomeScreenWrapper(
                 onCameraClick = { navController.navigate(Navigation.CAMERA) },
-                onAnalysisClick = { navController.navigate(Navigation.ANALYSIS) } // optional future screen
+                onAnalysisClick = { navController.navigate(Navigation.ANALYSIS) },
+                onSettingsClick = { navController.navigate(Navigation.SETTINGS) }
             )
         }
-        // CAMERA SCREEN
         composable(Navigation.CAMERA) {
             CameraScreen(
                 onImageCaptured = { file ->
@@ -176,13 +175,11 @@ fun AppNavigation() {
                 onClose = { navController.popBackStack() }
             )
         }
-        // PREVIEW SCREEN
         composable(route = "preview/{path}", arguments = listOf(navArgument("path") { type = NavType.StringType })) { entry ->
             val encodedPath = entry.arguments?.getString("path")!!
             val realPath = Uri.decode(encodedPath)
             val file = File(realPath)
 
-            // Assuming you have a state to hold the analysis result
             val analysisResult = remember { mutableStateOf<String?>(null) }
 
             CapturedImagePreview(
@@ -195,17 +192,13 @@ fun AppNavigation() {
                 }
             )
 
-            // Use LaunchedEffect to trigger analysis
             LaunchedEffect(file) {
                 val ai = ChatGPTService(BuildConfig.OPENAI_KEY)
-                analysisResult.value = ai.analyzeFoodImage(file) // Store the result
-                // Handle the result, e.g., show a dialog or update UI state
-                // You could use a state variable to trigger UI updates based on analysisResult.value
+                analysisResult.value = ai.analyzeFoodImage(file)
             }
 
             analysisResult.value?.let { result ->
-                // Show the result in a Text, Dialog, or any other appropriate UI component
-                Text(text = result) // Example of displaying the result
+                Text(text = result)
             }
         }
     }

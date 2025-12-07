@@ -5,9 +5,8 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.caloriesapp.utils.CalorieCalculator
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 // Extension property to create DataStore
@@ -25,6 +24,12 @@ object UserPreferences {
     private const val KEY_DISEASES = "diseases"
     private const val KEY_ONBOARDING_COMPLETE = "onboarding_complete"
 
+    private const val KEY_DAILY_CALORIE_GOAL = "daily_calorie_goal"
+    private const val KEY_PROTEIN_GOAL = "protein_goal"
+    private const val KEY_FAT_GOAL = "fat_goal"
+    private const val KEY_CARBS_GOAL = "carbs_goal"
+    private const val KEY_BMR = "bmr"
+    private const val KEY_TDEE = "tdee"
 
     private fun getPrefs(context: Context) =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -71,6 +76,20 @@ object UserPreferences {
         }
     }
 
+    suspend fun saveNutritionData(context: Context, nutritionData: CalorieCalculator.NutritionData) {
+        withContext(Dispatchers.IO) {
+            getPrefs(context).edit().apply {
+                putInt(KEY_DAILY_CALORIE_GOAL, nutritionData.dailyCalorieGoal)
+                putInt(KEY_PROTEIN_GOAL, nutritionData.proteinGoal)
+                putInt(KEY_FAT_GOAL, nutritionData.fatGoal)
+                putInt(KEY_CARBS_GOAL, nutritionData.carbsGoal)
+                putInt(KEY_BMR, nutritionData.bmr)
+                putInt(KEY_TDEE, nutritionData.tdee)
+                apply()
+            }
+        }
+    }
+
     // -------------------------
     // READ FLOWS
     // -------------------------
@@ -109,6 +128,42 @@ object UserPreferences {
         return withContext(Dispatchers.IO) {
             // ✅ Return empty set if null, also create mutable copy
             getPrefs(context).getStringSet(KEY_DISEASES, null)?.toSet() ?: emptySet()
+        }
+    }
+
+    suspend fun getDailyCalorieGoal(context: Context): Int {
+        return withContext(Dispatchers.IO) {
+            getPrefs(context).getInt(KEY_DAILY_CALORIE_GOAL, 2000)
+        }
+    }
+
+    suspend fun getProteinGoal(context: Context): Int {
+        return withContext(Dispatchers.IO) {
+            getPrefs(context).getInt(KEY_PROTEIN_GOAL, 150)
+        }
+    }
+
+    suspend fun getFatGoal(context: Context): Int {
+        return withContext(Dispatchers.IO) {
+            getPrefs(context).getInt(KEY_FAT_GOAL, 67)
+        }
+    }
+
+    suspend fun getCarbsGoal(context: Context): Int {
+        return withContext(Dispatchers.IO) {
+            getPrefs(context).getInt(KEY_CARBS_GOAL, 200)
+        }
+    }
+
+    suspend fun getBMR(context: Context): Int {
+        return withContext(Dispatchers.IO) {
+            getPrefs(context).getInt(KEY_BMR, 1500)
+        }
+    }
+
+    suspend fun getTDEE(context: Context): Int {
+        return withContext(Dispatchers.IO) {
+            getPrefs(context).getInt(KEY_TDEE, 2000)
         }
     }
 
